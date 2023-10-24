@@ -10,9 +10,20 @@ const urlDatabase = {
   "9sm5xK": "http://www.google.com"
 };
 
+// Function to generate a random short URL ID
+function generateRandomString() {
+  let result = "";
+  const characters = /[A-Za-z0-9]/;
+  for (let i = 0; i < 6; i++) {
+    result += characters.charAt(Math.floor(Math.random() * characters.length));
+  }
+  return result;
+}
+
 // Preparing the express.js to handle POST
 app.use(express.urlencoded({ extended: true }));
 
+// Root route
 app.get("/", (req, res) => {
   res.send("Hello!");
 });
@@ -36,6 +47,11 @@ app.get("/urls", (req, res) => {
 // New route to render the "urls_new" template
 app.get("/urls/new", (req, res) => {
   res.render("urls_new");
+});
+
+app.post("/urls", (req, res) => {
+  console.log(req.body); // Log the POST request body to the console
+  res.send("Ok"); // Respond with 'Ok' (you will replace this later)
 });
 
 // New route to render the "urls_show" template for a specific short URL ID
