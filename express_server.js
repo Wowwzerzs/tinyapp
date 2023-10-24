@@ -13,7 +13,8 @@ const urlDatabase = {
 // Function to generate a random short URL ID
 function generateRandomString() {
   let result = "";
-  const characters = /[A-Za-z0-9]/;
+  const characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+  ///[A-Za-z0-9]/;
   for (let i = 0; i < 6; i++) {
     result += characters.charAt(Math.floor(Math.random() * characters.length));
   }
@@ -50,14 +51,28 @@ app.get("/urls/new", (req, res) => {
 });
 
 app.post("/urls", (req, res) => {
-  console.log(req.body); // Log the POST request body to the console
-  res.send("Ok"); // Respond with 'Ok' (you will replace this later)
+  const longURL = req.body.longURL; // Assuming your HTML form sends the long URL as "longURL" in the request body
+  const shortURL = generateRandomString();
+  urlDatabase[shortURL] = longURL;
+  res.redirect(`/urls/${shortURL}`);
 });
 
 // New route to render the "urls_show" template for a specific short URL ID
 app.get("/urls/:id", (req, res) => {
   const templateVars = { id: req.params.id, longURL: urlDatabase[req.params.id] };
   res.render("urls_show", templateVars);
+});
+
+// Handling Short URL Redirection
+app.get("/u/:id", (req, res) => {
+  const shortURL = req.params.id;
+  const longURL = urlDatabase[shortURL];
+
+  if (longURL) {
+    res.redirect(longURL);
+  } else {
+    res.status(404).send("Short URL not found");
+  }
 });
 
 app.listen(PORT, () => {
