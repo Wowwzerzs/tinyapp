@@ -36,6 +36,8 @@
                 <form method="POST" action="/urls/<%= id %>/delete">
                   <button type="submit" class="btn btn-danger">Delete</button>
                 </form>
+                <!-- Add an "Edit" link -->
+                <a href="/urls/<%= id %>/show">Edit</a>
               </td>
             </tr>
             <% } %>

@@ -1,6 +1,6 @@
 const express = require("express");
 const app = express();
-const PORT = 8080; // default port 8080
+const PORT = 8000; // default port 8080
 
 // Set EJS as the view engine
 app.set("view engine", "ejs");
@@ -73,6 +73,18 @@ app.get("/u/:id", (req, res) => {
   } else {
     res.status(404).send("Short URL not found");
   }
+});
+
+// New POST route to handle URL updates
+app.post("/urls/:id/update", (req, res) => {
+  const shortURL = req.params.id; // Get the short URL ID from the route parameter
+  const newLongURL = req.body.newLongURL; // Get the new long URL from the request body
+
+  // Update the long URL in the urlDatabase
+  urlDatabase[shortURL] = newLongURL;
+
+  // Redirect the client back to the URLs index page
+  res.redirect("/urls");
 });
 
 app.listen(PORT, () => {
