@@ -44,7 +44,7 @@ app.get("/hello", (req, res) => {
 
 // New route to render the "urls_index" template
 app.get("/urls", (req, res) => {
-  const templateVars = { urls: urlDatabase, username: req.cookies.username };
+  const templateVars = { urls: urlDatabase, username: req.cookies.username, email: req.cookies.email };
   res.render("urls_index", templateVars);
 });
 
@@ -95,6 +95,18 @@ app.post("/login", (req, res) => {
   const { username } = req.body;
   res.cookie('username', username);
   res.redirect('/urls');
+});
+
+// New route to handle the logout action
+app.post("/logout", (req, res) => {
+  // Clear the username cookie
+  res.clearCookie('username');
+  res.redirect('/urls');
+});
+
+// GET route for the registration page
+app.get("/register", (req, res) => {
+  res.render("register");
 });
 
 app.listen(PORT, () => {
