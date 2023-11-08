@@ -1,6 +1,6 @@
 const express = require("express");
 const app = express();
-const PORT = 8000; // default port 8080
+const PORT = 8080; // default port 8080
 
 // Set EJS as the view engine
 app.set("view engine", "ejs");
@@ -14,7 +14,6 @@ const urlDatabase = {
 function generateRandomString() {
   let result = "";
   const characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-  ///[A-Za-z0-9]/;
   for (let i = 0; i < 6; i++) {
     result += characters.charAt(Math.floor(Math.random() * characters.length));
   }
@@ -23,6 +22,10 @@ function generateRandomString() {
 
 // Preparing the express.js to handle POST
 app.use(express.urlencoded({ extended: true }));
+
+// Add this middleware to set and read cookies
+const cookieParser = require('cookie-parser');
+app.use(cookieParser());
 
 // Root route
 app.get("/", (req, res) => {
@@ -41,7 +44,7 @@ app.get("/hello", (req, res) => {
 
 // New route to render the "urls_index" template
 app.get("/urls", (req, res) => {
-  const templateVars = { urls: urlDatabase };
+  const templateVars = { urls: urlDatabase, username: req.cookies.username };
   res.render("urls_index", templateVars);
 });
 
@@ -59,7 +62,7 @@ app.post("/urls", (req, res) => {
 
 // New route to render the "urls_show" template for a specific short URL ID
 app.get("/urls/:id", (req, res) => {
-  const templateVars = { id: req.params.id, longURL: urlDatabase[req.params.id] };
+  const templateVars = { id: req.params.id, longURL: urlDatabase[req.params.id], username: req.cookies.username };
   res.render("urls_show", templateVars);
 });
 
@@ -85,6 +88,13 @@ app.post("/urls/:id/update", (req, res) => {
 
   // Redirect the client back to the URLs index page
   res.redirect("/urls");
+});
+
+// New route to handle the login form submission and set the username cookie
+app.post("/login", (req, res) => {
+  const { username } = req.body;
+  res.cookie('username', username);
+  res.redirect('/urls');
 });
 
 app.listen(PORT, () => {
