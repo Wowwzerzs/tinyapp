@@ -115,6 +115,12 @@ app.post("/login", (req, res) => {
   res.redirect('/urls');
 });
 
+// New route to render the login form
+app.get("/login", (req, res) => {
+  const templateVars = { user: users[req.cookies.user_id] };
+  res.render("login", templateVars);
+});
+
 // New route to handle the logout action
 app.post("/logout", (req, res) => {
   // Clear the user_id cookie
