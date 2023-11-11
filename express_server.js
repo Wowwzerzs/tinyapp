@@ -34,6 +34,11 @@ function generateRandomString() {
   return result;
 }
 
+// Function to get a user by their email
+function getUserByEmail(email) {
+  return Object.values(users).find(user => user.email === email);
+}
+
 // Preparing the express.js to handle POST
 app.use(express.urlencoded({ extended: true }));
 
@@ -58,13 +63,13 @@ app.get("/hello", (req, res) => {
 
 // New route to render the "urls_index" template
 app.get("/urls", (req, res) => {
-  const templateVars = { urls: urlDatabase, user: users[req.cookies.user_id] };
+  const templateVars = { urls: urlDatabase, user_id: users[req.cookies.user_id] };
   res.render("urls_index", templateVars);
 });
 
 // New route to render the "urls_new" template
 app.get("/urls/new", (req, res) => {
-  const templateVars = { user: users[req.cookies.user_id] };
+  const templateVars = { user_id: users[req.cookies.user_id] };
   res.render("urls_new", templateVars);
 });
 
@@ -77,7 +82,7 @@ app.post("/urls", (req, res) => {
 
 // New route to render the "urls_show" template for a specific short URL ID
 app.get("/urls/:id", (req, res) => {
-  const templateVars = { id: req.params.id, longURL: urlDatabase[req.params.id], user: users[req.cookies.user_id] };
+  const templateVars = { id: req.params.id, longURL: urlDatabase[req.params.id], user_id: users[req.cookies.user_id] };
   res.render("urls_show", templateVars);
 });
 
@@ -106,32 +111,47 @@ app.post("/urls/:id/update", (req, res) => {
 });
 
 // New route to handle the login form submission and set the user_id cookie
+// Update POST /login endpoint
 app.post("/login", (req, res) => {
   const { email, password } = req.body;
-  const user = Object.values(users).find(u => u.email === email && u.password === password);
-  if (user) {
-    res.cookie('user_id', user.id);
+  // Use the getUserByEmail function to find the user by email
+  const user = getUserByEmail(email);
+  // Check if user exists
+  if (!user) {
+    res.status(403).send("User not found");
+    return;
   }
+  // Check if password matches
+  if (user.password !== password) {
+    res.status(403).send("Incorrect password");
+    return;
+  }
+  // Set user_id cookie with the matching user's random ID
+  res.cookie('user_id', user.id);
   res.redirect('/urls');
 });
 
 // New route to render the login form
 app.get("/login", (req, res) => {
-  const templateVars = { user: users[req.cookies.user_id] };
+  const templateVars = { user_id: users[req.cookies.user_id] };
   res.render("login", templateVars);
 });
 
 // New route to handle the logout action
+// Modify logout endpoint to clear the correct user_id cookie
 app.post("/logout", (req, res) => {
   // Clear the user_id cookie
   res.clearCookie('user_id');
-  res.redirect('/urls');
+  // Redirect to the login page
+  res.redirect('/login');
 });
 
 // GET route for the registration page
 app.get("/register", (req, res) => {
-  res.render("register");
+  const templateVars = { user_id: req.cookies.user_id }; // Provide user_id here
+  res.render("register", templateVars);
 });
+
 
 // POST route for user registration
 app.post("/register", (req, res) => {
