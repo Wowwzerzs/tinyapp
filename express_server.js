@@ -69,15 +69,23 @@ app.get("/urls", (req, res) => {
 
 // New route to render the "urls_new" template
 app.get("/urls/new", (req, res) => {
-  const templateVars = { user_id: users[req.cookies.user_id] };
-  res.render("urls_new", templateVars);
+  if (!req.cookies.user_id) {
+    res.redirect("/login");
+  } else {
+    const templateVars = { user: users[req.cookies.user_id] };
+    res.render("urls_new", templateVars);
+  }
 });
 
 app.post("/urls", (req, res) => {
-  const longURL = req.body.longURL; // Assuming your HTML form sends the long URL as "longURL" in the request body
-  const shortURL = generateRandomString();
-  urlDatabase[shortURL] = longURL;
-  res.redirect(`/urls/${shortURL}`);
+  if (!req.cookies.user_id) {
+    res.status(403).send("You must be logged in to create a new URL.");
+  } else {
+    const longURL = req.body.longURL;
+    const shortURL = generateRandomString();
+    urlDatabase[shortURL] = longURL;
+    res.redirect(`/urls/${shortURL}`);
+  }
 });
 
 // New route to render the "urls_show" template for a specific short URL ID
@@ -152,7 +160,6 @@ app.get("/register", (req, res) => {
   res.render("register", templateVars);
 });
 
-
 // POST route for user registration
 app.post("/register", (req, res) => {
   const { email, password } = req.body;
@@ -177,7 +184,6 @@ app.post("/register", (req, res) => {
 
   // Set user_id cookie with the newly generated user ID
   res.cookie('user_id', userId);
-
   res.redirect('/urls');
 });
 
