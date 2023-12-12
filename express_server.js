@@ -1,4 +1,5 @@
 const express = require("express");
+const bcrypt = require('bcryptjs');
 const app = express();
 const PORT = 8080; // default port 8080
 
@@ -19,9 +20,17 @@ const users = {
   },
 };
 
+// Modify the structure of urlDatabase
 const urlDatabase = {
-  "b2xVn2": "http://www.lighthouselabs.ca",
-  "9sm5xK": "http://www.google.com"
+  b6UTxQ: {
+    longURL: "https://www.tsn.ca",
+    userID: "aJ48lW",
+  },
+  i3BoGr: {
+    longURL: "https://www.google.ca",
+    userID: "aJ48lW",
+  },
+  // ... Other URLs
 };
 
 // Function to generate a random short URL ID
@@ -32,11 +41,22 @@ function generateRandomString() {
     result += characters.charAt(Math.floor(Math.random() * characters.length));
   }
   return result;
-}
+};
 
 // Function to get a user by their email
 function getUserByEmail(email) {
   return Object.values(users).find(user => user.email === email);
+};
+
+// Function to get URLs specific to a user
+function urlsForUser(id) {
+  const userURLs = {};
+  for (const shortURL in urlDatabase) {
+    if (urlDatabase[shortURL].userID === id) {
+      userURLs[shortURL] = urlDatabase[shortURL];
+    }
+  }
+  return userURLs;
 }
 
 // Preparing the express.js to handle POST
@@ -63,16 +83,23 @@ app.get("/hello", (req, res) => {
 
 // New route to render the "urls_index" template
 app.get("/urls", (req, res) => {
-  const templateVars = { urls: urlDatabase, user_id: users[req.cookies.user_id] };
-  res.render("urls_index", templateVars);
+  const userId = req.cookies.user_id;
+  if (!userId) {
+    res.send("<html><body>Please <a href='/login'>login</a> or <a href='/register'>register</a> first.</body></html>\n");
+  } else {
+    const userURLs = urlsForUser(userId);
+    const templateVars = { urls: userURLs, user_id: users[userId] };
+    res.render("urls_index", templateVars);
+  }
 });
 
 // New route to render the "urls_new" template
 app.get("/urls/new", (req, res) => {
+  // Check if the user is not logged in, redirect to the login page
   if (!req.cookies.user_id) {
     res.redirect("/login");
   } else {
-    const templateVars = { user: users[req.cookies.user_id] };
+    const templateVars = { user_id: users[req.cookies.user_id] };
     res.render("urls_new", templateVars);
   }
 });
@@ -88,10 +115,22 @@ app.post("/urls", (req, res) => {
   }
 });
 
-// New route to render the "urls_show" template for a specific short URL ID
+// New route to render the "urls_show" template for secure individual URL page access
 app.get("/urls/:id", (req, res) => {
-  const templateVars = { id: req.params.id, longURL: urlDatabase[req.params.id], user_id: users[req.cookies.user_id] };
-  res.render("urls_show", templateVars);
+  const userId = req.cookies.user_id;
+  const shortURL = req.params.id;
+  const urlData = urlDatabase[shortURL];
+
+  if (!userId) {
+    res.status(403).render("error", { errorMessage: "You must be logged in to view this URL." });
+  } else if (!urlData) {
+    res.status(404).render("error", { errorMessage: "Short URL not found" });
+  } else if (urlData.userID !== userId) {
+    res.status(403).render("error", { errorMessage: "You do not have permission to view this URL." });
+  } else {
+    const templateVars = { id: shortURL, longURL: urlData.longURL, user_id: users[userId] };
+    res.render("urls_show", templateVars);
+  }
 });
 
 // Handling Short URL Redirection
@@ -102,24 +141,47 @@ app.get("/u/:id", (req, res) => {
   if (longURL) {
     res.redirect(longURL);
   } else {
-    res.status(404).send("Short URL not found");
+    res.status(404).render("error", { errorMessage: "Short URL not found" });
   }
 });
 
-// New POST route to handle URL updates
+// New POST route to handle URL updates and deletes
 app.post("/urls/:id/update", (req, res) => {
-  const shortURL = req.params.id; // Get the short URL ID from the route parameter
-  const newLongURL = req.body.newLongURL; // Get the new long URL from the request body
+  const userId = req.cookies.user_id;
+  const shortURL = req.params.id;
+  const urlData = urlDatabase[shortURL];
 
-  // Update the long URL in the urlDatabase
-  urlDatabase[shortURL] = newLongURL;
+  if (!userId) {
+    res.status(403).send("You must be logged in to edit this URL.");
+  } else if (!urlData) {
+    res.status(404).send("Short URL not found");
+  } else if (urlData.userID !== userId) {
+    res.status(403).send("You do not have permission to edit this URL.");
+  } else {
+    const newLongURL = req.body.newLongURL;
+    urlData.longURL = newLongURL;
+    res.redirect("/urls");
+  }
+});
 
-  // Redirect the client back to the URLs index page
-  res.redirect("/urls");
+app.post("/urls/:id/delete", (req, res) => {
+  const userId = req.cookies.user_id;
+  const shortURL = req.params.id;
+  const urlData = urlDatabase[shortURL];
+
+  if (!userId) {
+    res.status(403).send("You must be logged in to delete this URL.");
+  } else if (!urlData) {
+    res.status(404).send("Short URL not found");
+  } else if (urlData.userID !== userId) {
+    res.status(403).send("You do not have permission to delete this URL.");
+  } else {
+    delete urlDatabase[shortURL];
+    res.redirect("/urls");
+  }
 });
 
 // New route to handle the login form submission and set the user_id cookie
-// Update POST /login endpoint
 app.post("/login", (req, res) => {
   const { email, password } = req.body;
   // Use the getUserByEmail function to find the user by email
@@ -146,7 +208,6 @@ app.get("/login", (req, res) => {
 });
 
 // New route to handle the logout action
-// Modify logout endpoint to clear the correct user_id cookie
 app.post("/logout", (req, res) => {
   // Clear the user_id cookie
   res.clearCookie('user_id');
