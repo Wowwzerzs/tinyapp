@@ -66,8 +66,11 @@ function urlsForUser(id) {
 app.use(express.urlencoded({ extended: true }));
 
 // Add this middleware to set and read cookies
-const cookieParser = require('cookie-parser');
-app.use(cookieParser());
+const cookieSession = require('cookie-session');
+app.use(cookieSession({
+  name: 'session',
+  keys: ['key1', 'key2'] // Add your secret keys here for encryption
+}));
 
 // Root route
 app.get("/", (req, res) => {
