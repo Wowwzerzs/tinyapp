@@ -21,6 +21,7 @@ const users = {
     email: "user2@example.com",
     password: hashedPassword2, // Replace existing plain text with hashed password
   },
+  // ... other users
 };
 
 // Modify the structure of urlDatabase
@@ -89,7 +90,7 @@ app.get("/hello", (req, res) => {
 
 // New route to render the "urls_index" template
 app.get("/urls", (req, res) => {
-  const userId = req.cookies.user_id;
+  const userId = req.session.user_id;
   if (!userId) {
     res.send("<html><body>Please <a href='/login'>login</a> or <a href='/register'>register</a> first.</body></html>\n");
   } else {
@@ -102,10 +103,10 @@ app.get("/urls", (req, res) => {
 // New route to render the "urls_new" template
 app.get("/urls/new", (req, res) => {
   // Check if the user is not logged in, redirect to the login page
-  if (!req.cookies.user_id) {
+  if (!req.session.user_id) {
     res.redirect("/login");
   } else {
-    const templateVars = { user_id: users[req.cookies.user_id] };
+    const templateVars = { user_id: users[req.session.user_id] };
     res.render("urls_new", templateVars);
   }
 });
@@ -198,27 +199,27 @@ app.post("/login", (req, res) => {
     return;
   }
   // Set user_id cookie with the matching user's random ID
-  res.cookie('user_id', user.id);
+  req.session.user_id = user.id;
   res.redirect('/urls');
 });
 
 // New route to render the login form
 app.get("/login", (req, res) => {
-  const templateVars = { user_id: users[req.cookies.user_id] };
+  const templateVars = { user_id: users[req.session.user_id] };
   res.render("login", templateVars);
 });
 
 // New route to handle the logout action
 app.post("/logout", (req, res) => {
   // Clear the user_id cookie
-  res.clearCookie('user_id');
+  req.session = null;
   // Redirect to the login page
   res.redirect('/login');
 });
 
 // GET route for the registration page
 app.get("/register", (req, res) => {
-  const templateVars = { user_id: req.cookies.user_id }; // Provide user_id here
+  const templateVars = { user_id: req.session.user_id }; // Provide user_id here
   res.render("register", templateVars);
 });
 
@@ -246,7 +247,7 @@ app.post("/register", (req, res) => {
   users[userId] = newUser;
 
   // Set user_id cookie with the newly generated user ID
-  res.cookie('user_id', userId);
+  req.session.user_id = userId;
   res.redirect('/urls');
 });
 
