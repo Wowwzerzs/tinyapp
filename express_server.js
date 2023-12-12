@@ -3,6 +3,9 @@ const bcrypt = require('bcryptjs');
 const app = express();
 const PORT = 8080; // default port 8080
 
+// Importing the getUserByEmail function from helpers.js
+const { getUserByEmail } = require('./helpers');
+
 // Set EJS as the view engine
 app.set("view engine", "ejs");
 
@@ -45,11 +48,6 @@ function generateRandomString() {
     result += characters.charAt(Math.floor(Math.random() * characters.length));
   }
   return result;
-};
-
-// Function to get a user by their email
-function getUserByEmail(email) {
-  return Object.values(users).find(user => user.email === email);
 };
 
 // Function to get URLs specific to a user
@@ -192,7 +190,7 @@ app.post("/urls/:id/delete", (req, res) => {
 app.post("/login", (req, res) => {
   const { email, password } = req.body;
   // Use the getUserByEmail function to find the user by email
-  const user = getUserByEmail(email);
+  const user = getUserByEmail(email, users);
   // Check if hashed user exists and if passwords match
   if (!user || !bcrypt.compareSync(password, user.password)) {
     res.status(403).send("Invalid email or password");
