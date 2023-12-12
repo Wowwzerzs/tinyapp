@@ -7,16 +7,19 @@ const PORT = 8080; // default port 8080
 app.set("view engine", "ejs");
 
 // Global users object to store user data
+const hashedPassword1 = bcrypt.hashSync("purple-monkey-dinosaur", 10);
+const hashedPassword2 = bcrypt.hashSync("dishwasher-funk", 10);
+
 const users = {
   userRandomID: {
     id: "userRandomID",
     email: "user@example.com",
-    password: "purple-monkey-dinosaur",
+    password: hashedPassword1, // Replace existing plain text with hashed password
   },
   user2RandomID: {
     id: "user2RandomID",
     email: "user2@example.com",
-    password: "dishwasher-funk",
+    password: hashedPassword2, // Replace existing plain text with hashed password
   },
 };
 
