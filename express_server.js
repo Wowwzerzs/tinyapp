@@ -186,14 +186,9 @@ app.post("/login", (req, res) => {
   const { email, password } = req.body;
   // Use the getUserByEmail function to find the user by email
   const user = getUserByEmail(email);
-  // Check if user exists
-  if (!user) {
-    res.status(403).send("User not found");
-    return;
-  }
-  // Check if password matches
-  if (user.password !== password) {
-    res.status(403).send("Incorrect password");
+  // Check if hashed user exists and if passwords match
+  if (!user || !bcrypt.compareSync(password, user.password)) {
+    res.status(403).send("Invalid email or password");
     return;
   }
   // Set user_id cookie with the matching user's random ID
