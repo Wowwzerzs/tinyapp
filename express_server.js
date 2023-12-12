@@ -234,12 +234,13 @@ app.post("/register", (req, res) => {
     res.status(400).send("Email already registered");
     return;
   }
+  const hashedPassword = bcrypt.hashSync(password, 10); // Hash the password
 
   const userId = generateRandomString();
   const newUser = {
     id: userId,
     email,
-    password,
+    password: hashedPassword, // Store the hashed password
   };
   users[userId] = newUser;
 
