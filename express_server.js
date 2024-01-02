@@ -9,6 +9,21 @@ const { getUserByEmail } = require('./helpers');
 // Set EJS as the view engine
 app.set("view engine", "ejs");
 
+// Add this middleware to set and read cookies
+const cookieSession = require('cookie-session');
+app.use(cookieSession({
+  name: 'session',
+  keys: ['key1', 'key2'] // Add your secret keys here for encryption
+}));
+
+// Middleware to initialize req.session if undefined
+app.use((req, res, next) => {
+  if (!req.session) {
+    req.session = {};
+  }
+  next();
+});
+
 // Global users object to store user data
 const hashedPassword1 = bcrypt.hashSync("purple-monkey-dinosaur", 10);
 const hashedPassword2 = bcrypt.hashSync("dishwasher-funk", 10);
@@ -40,36 +55,8 @@ const urlDatabase = {
   // ... Other URLs
 };
 
-// Function to generate a random short URL ID
-function generateRandomString() {
-  let result = "";
-  const characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-  for (let i = 0; i < 6; i++) {
-    result += characters.charAt(Math.floor(Math.random() * characters.length));
-  }
-  return result;
-};
-
-// Function to get URLs specific to a user
-function urlsForUser(id) {
-  const userURLs = {};
-  for (const shortURL in urlDatabase) {
-    if (urlDatabase[shortURL].userID === id) {
-      userURLs[shortURL] = urlDatabase[shortURL];
-    }
-  }
-  return userURLs;
-}
-
 // Preparing the express.js to handle POST
 app.use(express.urlencoded({ extended: true }));
-
-// Add this middleware to set and read cookies
-const cookieSession = require('cookie-session');
-app.use(cookieSession({
-  name: 'session',
-  keys: ['key1', 'key2'] // Add your secret keys here for encryption
-}));
 
 // Root route
 app.get("/", (req, res) => {
@@ -100,29 +87,30 @@ app.get("/urls", (req, res) => {
 
 // New route to render the "urls_new" template
 app.get("/urls/new", (req, res) => {
-  // Check if the user is not logged in, redirect to the login page
-  if (!req.session.user_id) {
+  const userId = req.session.user_id;
+  if (!userId) {
     res.redirect("/login");
   } else {
-    const templateVars = { user_id: users[req.session.user_id] };
+    const templateVars = { user_id: users[userId] };
     res.render("urls_new", templateVars);
   }
 });
 
 app.post("/urls", (req, res) => {
-  if (!req.cookies.user_id) {
+  if (!req.session.user_id) {
     res.status(403).send("You must be logged in to create a new URL.");
   } else {
     const longURL = req.body.longURL;
     const shortURL = generateRandomString();
-    urlDatabase[shortURL] = longURL;
+    const userId = req.session.user_id; // Get the user ID from the session
+    urlDatabase[shortURL] = { longURL, userID: userId }; // Store the userID along with the URL
     res.redirect(`/urls/${shortURL}`);
   }
 });
 
 // New route to render the "urls_show" template for secure individual URL page access
 app.get("/urls/:id", (req, res) => {
-  const userId = req.cookies.user_id;
+  const userId = req.session.user_id;
   const shortURL = req.params.id;
   const urlData = urlDatabase[shortURL];
 
@@ -141,10 +129,10 @@ app.get("/urls/:id", (req, res) => {
 // Handling Short URL Redirection
 app.get("/u/:id", (req, res) => {
   const shortURL = req.params.id;
-  const longURL = urlDatabase[shortURL];
+  const urlData = urlDatabase[shortURL];
 
-  if (longURL) {
-    res.redirect(longURL);
+  if (urlData) {
+    res.redirect(urlData.longURL);
   } else {
     res.status(404).render("error", { errorMessage: "Short URL not found" });
   }
@@ -152,7 +140,7 @@ app.get("/u/:id", (req, res) => {
 
 // New POST route to handle URL updates and deletes
 app.post("/urls/:id/update", (req, res) => {
-  const userId = req.cookies.user_id;
+  const userId = req.session.user_id;
   const shortURL = req.params.id;
   const urlData = urlDatabase[shortURL];
 
@@ -170,7 +158,7 @@ app.post("/urls/:id/update", (req, res) => {
 });
 
 app.post("/urls/:id/delete", (req, res) => {
-  const userId = req.cookies.user_id;
+  const userId = req.session.user_id;
   const shortURL = req.params.id;
   const urlData = urlDatabase[shortURL];
 
@@ -203,7 +191,7 @@ app.post("/login", (req, res) => {
 
 // New route to render the login form
 app.get("/login", (req, res) => {
-  const templateVars = { user_id: users[req.session.user_id] };
+  const templateVars = { user_id: req.session.user_id };
   res.render("login", templateVars);
 });
 

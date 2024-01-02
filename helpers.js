@@ -3,4 +3,30 @@ const getUserByEmail = function (email, database) {
   return Object.values(database).find(user => user.email === email);
 };
 
-module.exports = { getUserByEmail };
+// Function to generate a random short URL ID
+function generateRandomString() {
+  let result = "";
+  const characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+  for (let i = 0; i < 6; i++) {
+    result += characters.charAt(Math.floor(Math.random() * characters.length));
+  }
+  return result;
+};
+
+// Function to get URLs specific to a user
+function urlsForUser(id) {
+  const userURLs = {};
+  for (const shortURL in urlDatabase) {
+    if (urlDatabase[shortURL].userID === id) {
+      userURLs[shortURL] = urlDatabase[shortURL];
+    }
+  }
+  return userURLs;
+};
+
+
+module.exports = {
+  getUserByEmail,
+  generateRandomString,
+  urlsForUser
+};
