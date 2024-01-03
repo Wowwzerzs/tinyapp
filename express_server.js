@@ -4,7 +4,7 @@ const app = express();
 const PORT = 8080; // default port 8080
 
 // Importing the getUserByEmail function from helpers.js
-const { getUserByEmail } = require('./helpers');
+const { getUserByEmail, generateRandomString, urlsForUser } = require('./helpers');
 
 // Set EJS as the view engine
 app.set("view engine", "ejs");
@@ -58,6 +58,21 @@ const urlDatabase = {
 // Preparing the express.js to handle POST
 app.use(express.urlencoded({ extended: true }));
 
+// Function to check user permission
+const checkUserPermission = (res, userId, urlData) => {
+  if (!userId) {
+    res.status(403).send("You must be logged in to perform this action.");
+    return false;
+  } else if (!urlData) {
+    res.status(404).send("Short URL not found.");
+    return false;
+  } else if (urlData.userID !== userId) {
+    res.status(403).send("You do not have permission to perform this action.");
+    return false;
+  }
+  return true;
+};
+
 // Root route
 app.get("/", (req, res) => {
   res.send("Hello!");
@@ -75,23 +90,23 @@ app.get("/hello", (req, res) => {
 
 // New route to render the "urls_index" template
 app.get("/urls", (req, res) => {
-  const userId = req.session.user_id;
-  if (!userId) {
+  const user_id = req.session.user_id;
+  if (!user_id) {
     res.send("<html><body>Please <a href='/login'>login</a> or <a href='/register'>register</a> first.</body></html>\n");
   } else {
-    const userURLs = urlsForUser(userId);
-    const templateVars = { urls: userURLs, user_id: users[userId] };
+    const userURLs = urlsForUser(user_id, urlDatabase);;
+    const templateVars = { urls: userURLs, user_id };
     res.render("urls_index", templateVars);
   }
 });
 
 // New route to render the "urls_new" template
 app.get("/urls/new", (req, res) => {
-  const userId = req.session.user_id;
-  if (!userId) {
+  const user_id = req.session.user_id;
+  if (!user_id) {
     res.redirect("/login");
   } else {
-    const templateVars = { user_id: users[userId] };
+    const templateVars = { user_id };
     res.render("urls_new", templateVars);
   }
 });
@@ -102,28 +117,24 @@ app.post("/urls", (req, res) => {
   } else {
     const longURL = req.body.longURL;
     const shortURL = generateRandomString();
-    const userId = req.session.user_id; // Get the user ID from the session
-    urlDatabase[shortURL] = { longURL, userID: userId }; // Store the userID along with the URL
+    const userId = req.session.user_id;
+    urlDatabase[shortURL] = { longURL, userID: userId };
     res.redirect(`/urls/${shortURL}`);
   }
 });
 
 // New route to render the "urls_show" template for secure individual URL page access
 app.get("/urls/:id", (req, res) => {
-  const userId = req.session.user_id;
+  const user_id = req.session.user_id;
   const shortURL = req.params.id;
   const urlData = urlDatabase[shortURL];
 
-  if (!userId) {
-    res.status(403).render("error", { errorMessage: "You must be logged in to view this URL." });
-  } else if (!urlData) {
-    res.status(404).render("error", { errorMessage: "Short URL not found" });
-  } else if (urlData.userID !== userId) {
-    res.status(403).render("error", { errorMessage: "You do not have permission to view this URL." });
-  } else {
-    const templateVars = { id: shortURL, longURL: urlData.longURL, user_id: users[userId] };
-    res.render("urls_show", templateVars);
+  if (!checkUserPermission(res, user_id, urlData)) {
+    return;
   }
+
+  const templateVars = { id: shortURL, longURL: urlData.longURL, user_id };
+  res.render("urls_show", templateVars);
 });
 
 // Handling Short URL Redirection
@@ -144,17 +155,13 @@ app.post("/urls/:id/update", (req, res) => {
   const shortURL = req.params.id;
   const urlData = urlDatabase[shortURL];
 
-  if (!userId) {
-    res.status(403).send("You must be logged in to edit this URL.");
-  } else if (!urlData) {
-    res.status(404).send("Short URL not found");
-  } else if (urlData.userID !== userId) {
-    res.status(403).send("You do not have permission to edit this URL.");
-  } else {
-    const newLongURL = req.body.newLongURL;
-    urlData.longURL = newLongURL;
-    res.redirect("/urls");
+  if (!checkUserPermission(res, userId, urlData)) {
+    return;
   }
+
+  const newLongURL = req.body.newLongURL;
+  urlData.longURL = newLongURL;
+  res.redirect("/urls");
 });
 
 app.post("/urls/:id/delete", (req, res) => {
@@ -162,16 +169,12 @@ app.post("/urls/:id/delete", (req, res) => {
   const shortURL = req.params.id;
   const urlData = urlDatabase[shortURL];
 
-  if (!userId) {
-    res.status(403).send("You must be logged in to delete this URL.");
-  } else if (!urlData) {
-    res.status(404).send("Short URL not found");
-  } else if (urlData.userID !== userId) {
-    res.status(403).send("You do not have permission to delete this URL.");
-  } else {
-    delete urlDatabase[shortURL];
-    res.redirect("/urls");
+  if (!checkUserPermission(res, userId, urlData)) {
+    return;
   }
+
+  delete urlDatabase[shortURL];
+  res.redirect("/urls");
 });
 
 // New route to handle the login form submission and set the user_id cookie

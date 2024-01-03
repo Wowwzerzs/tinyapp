@@ -14,7 +14,7 @@ function generateRandomString() {
 };
 
 // Function to get URLs specific to a user
-function urlsForUser(id) {
+function urlsForUser(id, urlDatabase) {
   const userURLs = {};
   for (const shortURL in urlDatabase) {
     if (urlDatabase[shortURL].userID === id) {
