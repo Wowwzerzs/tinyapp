@@ -1,10 +1,10 @@
 // Function to get a user by their email
-const getUserByEmail = function (email, database) {
+const getUserByEmail = function(email, database) {
   return Object.values(database).find(user => user.email === email);
 };
 
 // Function to generate a random short URL ID
-function generateRandomString() {
+const generateRandomString = function() {
   let result = "";
   const characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
   for (let i = 0; i < 6; i++) {
@@ -14,7 +14,7 @@ function generateRandomString() {
 };
 
 // Function to get URLs specific to a user
-function urlsForUser(id, urlDatabase) {
+const urlsForUser = function(id, urlDatabase) {
   const userURLs = {};
   for (const shortURL in urlDatabase) {
     if (urlDatabase[shortURL].userID === id) {
@@ -23,7 +23,6 @@ function urlsForUser(id, urlDatabase) {
   }
   return userURLs;
 };
-
 
 module.exports = {
   getUserByEmail,

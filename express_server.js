@@ -2,15 +2,12 @@ const express = require("express");
 const bcrypt = require('bcryptjs');
 const app = express();
 const PORT = 8080; // default port 8080
-
-// Importing the getUserByEmail function from helpers.js
-const { getUserByEmail, generateRandomString, urlsForUser } = require('./helpers');
+const { getUserByEmail, generateRandomString, urlsForUser } = require('./helpers'); // Importing the getUserByEmail function from helpers.js
 
 // Set EJS as the view engine
 app.set("view engine", "ejs");
 
-// Add this middleware to set and read cookies
-const cookieSession = require('cookie-session');
+const cookieSession = require('cookie-session'); // Add this middleware to set and read cookies
 app.use(cookieSession({
   name: 'session',
   keys: ['key1', 'key2'] // Add your secret keys here for encryption
@@ -94,7 +91,7 @@ app.get("/urls", (req, res) => {
   if (!user_id) {
     res.send("<html><body>Please <a href='/login'>login</a> or <a href='/register'>register</a> first.</body></html>\n");
   } else {
-    const userURLs = urlsForUser(user_id, urlDatabase);;
+    const userURLs = urlsForUser(user_id, urlDatabase);
     const templateVars = { urls: userURLs, user_id };
     res.render("urls_index", templateVars);
   }
@@ -132,7 +129,6 @@ app.get("/urls/:id", (req, res) => {
   if (!checkUserPermission(res, user_id, urlData)) {
     return;
   }
-
   const templateVars = { id: shortURL, longURL: urlData.longURL, user_id };
   res.render("urls_show", templateVars);
 });
@@ -180,15 +176,20 @@ app.post("/urls/:id/delete", (req, res) => {
 // New route to handle the login form submission and set the user_id cookie
 app.post("/login", (req, res) => {
   const { email, password } = req.body;
-  // Use the getUserByEmail function to find the user by email
-  const user = getUserByEmail(email, users);
+  const user = getUserByEmail(email, users); // Use the getUserByEmail function to find the user by email
+
   // Check if hashed user exists and if passwords match
   if (!user || !bcrypt.compareSync(password, user.password)) {
     res.status(403).send("Invalid email or password");
     return;
   }
-  // Set user_id cookie with the matching user's random ID
-  req.session.user_id = user.id;
+
+  req.session.user_id = user.id; // Set user_id cookie with the matching user's random ID
+
+  // Log the user_id and associated URLs after successful login
+  const user_id = req.session.user_id;
+  const userURLs = urlsForUser(user_id, urlDatabase);
+
   res.redirect('/urls');
 });
 
@@ -200,10 +201,8 @@ app.get("/login", (req, res) => {
 
 // New route to handle the logout action
 app.post("/logout", (req, res) => {
-  // Clear the user_id cookie
-  req.session = null;
-  // Redirect to the login page
-  res.redirect('/login');
+  req.session = null; // Clear the user_id cookie
+  res.redirect('/login'); // Redirect to the login page
 });
 
 // GET route for the registration page

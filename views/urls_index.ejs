@@ -26,10 +26,14 @@
           <% for (let id in urls) { %>
             <tr>
               <td>
-                <%= id %>
+                <a href=" /u/<%= id %>">
+                  <%= id %>
+                </a>
               </td>
               <td>
-                <%= urls[id].longURL %> <!-- Display the long URL -->
+                <a href="<%= urls[id].longURL %>">
+                  <%= urls[id].longURL %>
+                </a> <!-- Display the long URL -->
               </td>
               <td>
                 <!-- Add a form for delete action -->
