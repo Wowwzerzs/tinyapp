@@ -22,8 +22,8 @@ The URL Shortener app includes the following features:
 ### My URLs Page:
 !["My URLs Page:"](https://github.com/Wowwzerzs/tinyapp/blob/master/docs/urls-page.png?raw=true)
 
-### Creat TinyUrls Page:
-!["Creat TinyUrls Page:"](https://github.com/Wowwzerzs/tinyapp/blob/master/docs/create-tinyurl-page.png?raw=true)
+### Create TinyUrls Page:
+!["Create TinyUrls Page:"](https://github.com/Wowwzerzs/tinyapp/blob/master/docs/create-tinyurl-page.png?raw=true)
 
 ## Dependencies
 
