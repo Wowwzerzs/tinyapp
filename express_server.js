@@ -2,7 +2,7 @@ const express = require("express");
 const bcrypt = require('bcryptjs');
 const app = express();
 const PORT = 8080; // default port 8080
-const { getUserByEmail, generateRandomString, urlsForUser } = require('./helpers'); // Importing the getUserByEmail function from helpers.js
+const { getUserByEmail, generateRandomString, urlsForUser, checkUserPermission, getUserById } = require('./helpers'); // Importing the getUserByEmail function from helpers.js
 
 // Set EJS as the view engine
 app.set("view engine", "ejs");
@@ -55,24 +55,9 @@ const urlDatabase = {
 // Preparing the express.js to handle POST
 app.use(express.urlencoded({ extended: true }));
 
-// Function to check user permission
-const checkUserPermission = (res, userId, urlData) => {
-  if (!userId) {
-    res.status(403).send("You must be logged in to perform this action.");
-    return false;
-  } else if (!urlData) {
-    res.status(404).send("Short URL not found.");
-    return false;
-  } else if (urlData.userID !== userId) {
-    res.status(403).send("You do not have permission to perform this action.");
-    return false;
-  }
-  return true;
-};
-
 // Root route
 app.get("/", (req, res) => {
-  res.send("Hello!");
+  res.redirect("/login");
 });
 
 // New route to respond with the urlDatabase in JSON format
@@ -88,11 +73,13 @@ app.get("/hello", (req, res) => {
 // New route to render the "urls_index" template
 app.get("/urls", (req, res) => {
   const user_id = req.session.user_id;
+  const user = getUserById(user_id, users); // Retrieve user data based on session ID
+
   if (!user_id) {
     res.send("<html><body>Please <a href='/login'>login</a> or <a href='/register'>register</a> first.</body></html>\n");
   } else {
     const userURLs = urlsForUser(user_id, urlDatabase);
-    const templateVars = { urls: userURLs, user_id };
+    const templateVars = { urls: userURLs, user }; // Pass 'user' to the template
     res.render("urls_index", templateVars);
   }
 });
@@ -100,10 +87,12 @@ app.get("/urls", (req, res) => {
 // New route to render the "urls_new" template
 app.get("/urls/new", (req, res) => {
   const user_id = req.session.user_id;
+  const user = getUserById(user_id, users); // Retrieve user data based on session ID
+
   if (!user_id) {
     res.redirect("/login");
   } else {
-    const templateVars = { user_id };
+    const templateVars = { user_id, user }; // Pass 'user' to the template
     res.render("urls_new", templateVars);
   }
 });
@@ -129,7 +118,28 @@ app.get("/urls/:id", (req, res) => {
   if (!checkUserPermission(res, user_id, urlData)) {
     return;
   }
-  const templateVars = { id: shortURL, longURL: urlData.longURL, user_id };
+
+  const user = getUserById(user_id, users); // Fetch user data
+
+  const templateVars = { id: shortURL, longURL: urlData.longURL, user_id, user }; // Pass 'user' to the template
+  res.render("urls_show", templateVars);
+});
+
+app.get("/urls/:id/show", (req, res) => {
+  const shortURL = req.params.id;
+  const urlData = urlDatabase[shortURL];
+
+  if (!urlData) {
+    return res.status(404).send("Short URL not found.");
+  }
+
+  const templateVars = {
+    id: shortURL,
+    longURL: urlData.longURL,
+    user_id: req.session.user_id,
+    user: users[req.session.user_id] // Pass the user information
+  };
+
   res.render("urls_show", templateVars);
 });
 
@@ -173,29 +183,34 @@ app.post("/urls/:id/delete", (req, res) => {
   res.redirect("/urls");
 });
 
-// New route to handle the login form submission and set the user_id cookie
+// Route to handle user login
 app.post("/login", (req, res) => {
   const { email, password } = req.body;
-  const user = getUserByEmail(email, users); // Use the getUserByEmail function to find the user by email
+  const user = getUserByEmail(email, users);
 
-  // Check if hashed user exists and if passwords match
+  // Check if user exists and passwords match
   if (!user || !bcrypt.compareSync(password, user.password)) {
     res.status(403).send("Invalid email or password");
     return;
   }
 
-  req.session.user_id = user.id; // Set user_id cookie with the matching user's random ID
+  req.session.user_id = user.id; // Set user_id cookie with the matching user's ID
 
   // Log the user_id and associated URLs after successful login
   const user_id = req.session.user_id;
   const userURLs = urlsForUser(user_id, urlDatabase);
+  console.log("User ID:", user_id);
+  console.log("User's URLs:", userURLs);
 
   res.redirect('/urls');
 });
 
-// New route to render the login form
+// Route to render the login form
 app.get("/login", (req, res) => {
-  const templateVars = { user_id: req.session.user_id };
+  const user_id = req.session.user_id;
+  const user = getUserById(user_id, users); // Fetch user data
+
+  const templateVars = { user_id, user }; // Pass 'user' to the template
   res.render("login", templateVars);
 });
 
@@ -205,9 +220,12 @@ app.post("/logout", (req, res) => {
   res.redirect('/login'); // Redirect to the login page
 });
 
-// GET route for the registration page
+// Route to render the registration form
 app.get("/register", (req, res) => {
-  const templateVars = { user_id: req.session.user_id }; // Provide user_id here
+  const user_id = req.session.user_id;
+  const user = getUserById(user_id, users); // Fetch user data
+
+  const templateVars = { user_id, user }; // Pass 'user' to the template
   res.render("register", templateVars);
 });
 
