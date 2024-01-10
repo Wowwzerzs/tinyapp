@@ -41,7 +41,9 @@
                   <button type="submit" class="btn btn-danger">Delete</button>
                 </form>
                 <!-- Add an "Edit" link -->
-                <a href="/urls/<%= id %>/show">Edit</a>
+                <form method="GET" action="/urls/<%= id %>/show">
+                  <button type="submit" class="btn btn-primary">Edit</button>
+                </form>
               </td>
             </tr>
             <% } %>
