@@ -13,9 +13,17 @@ The URL Shortener app includes the following features:
 
 ## Final Product
 
+### Login Page:
 !["Login Page:"](https://github.com/Wowwzerzs/tinyapp/blob/master/docs/login-page.png?raw=true)
-!["Creat Account Page:"](https://github.com/Wowwzerzs/tinyapp/blob/master/docs/creat-account-page.png?raw=true)
+
+### Creat Account Page:
+!["Creat Account Page:"](https://github.com/Wowwzerzs/tinyapp/blob/master/docs/create-account-page.png?raw=true)
+
+### My URLs Page:
 !["My URLs Page:"](https://github.com/Wowwzerzs/tinyapp/blob/master/docs/urls-page.png?raw=true)
+
+### Creat TinyUrls Page:
+!["Creat TinyUrls Page:"](https://github.com/Wowwzerzs/tinyapp/blob/master/docs/create-tinyurl-page.png?raw=true)
 
 ## Dependencies
 
