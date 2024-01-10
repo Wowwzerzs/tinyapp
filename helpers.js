@@ -3,6 +3,11 @@ const getUserByEmail = function(email, database) {
   return Object.values(database).find(user => user.email === email);
 };
 
+// Function to get a user by their ID
+const getUserById = function(id, users) {
+  return users[id];
+};
+
 // Function to generate a random short URL ID
 const generateRandomString = function() {
   let result = "";
@@ -24,8 +29,25 @@ const urlsForUser = function(id, urlDatabase) {
   return userURLs;
 };
 
+// Function to check user permission
+const checkUserPermission = (res, userId, urlData) => {
+  if (!userId) {
+    res.status(403).send("You must be logged in to perform this action.");
+    return false;
+  } else if (!urlData) {
+    res.status(404).send("Short URL not found.");
+    return false;
+  } else if (urlData.userID !== userId) {
+    res.status(403).send("You do not have permission to perform this action.");
+    return false;
+  }
+  return true;
+};
+
 module.exports = {
   getUserByEmail,
   generateRandomString,
-  urlsForUser
+  urlsForUser,
+  checkUserPermission,
+  getUserById
 };
